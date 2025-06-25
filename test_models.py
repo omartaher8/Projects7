@@ -1,0 +1,64 @@
+import unittest
+from service.models import Product, db
+from tests.factories import ProductFactory
+
+class TestProductModel(unittest.TestCase):
+    def setUp(self):
+        db.drop_all()
+        db.create_all()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+
+    def test_create_product(self):
+        product = ProductFactory()
+        product.create()
+        self.assertIsNotNone(product.id)
+
+    def test_read_product(self):
+        product = ProductFactory()
+        product.create()
+        found = Product.find(product.id)
+        self.assertIsNotNone(found)
+        self.assertEqual(found.id, product.id)
+
+    def test_update_product(self):
+        product = ProductFactory()
+        product.create()
+        product.name = "Updated Product"
+        product.update()
+        updated = Product.find(product.id)
+        self.assertEqual(updated.name, "Updated Product")
+
+    def test_delete_product(self):
+        product = ProductFactory()
+        product.create()
+        product_id = product.id
+        product.delete()
+        result = Product.find(product_id)
+        self.assertIsNone(result)
+
+    def test_list_all_products(self):
+        ProductFactory.create_batch(3)
+        products = Product.all()
+        self.assertEqual(len(products), 3)
+
+    def test_find_by_name(self):
+        Product(name="Camera", category="Electronics", price=199.99).create()
+        Product(name="Camera", category="Photography", price=299.99).create()
+        results = Product.find_by_name("Camera")
+        self.assertEqual(len(results), 2)
+
+    def test_find_by_category(self):
+        Product(name="Shirt", category="Clothing", price=29.99).create()
+        Product(name="Jeans", category="Clothing", price=49.99).create()
+        results = Product.find_by_category("Clothing")
+        self.assertEqual(len(results), 2)
+
+    def test_find_by_availability(self):
+        Product(name="Available", available=True).create()
+        Product(name="Unavailable", available=False).create()
+        results = Product.find_by_availability(True)
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].available)
